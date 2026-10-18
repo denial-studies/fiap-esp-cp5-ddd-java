@@ -15,9 +15,8 @@
     <packaging>jar</packaging>
 
     <name>FIAP Bank - Core Bancario - Domain</name>
-    <description>Modulo de Dominio Puro do Core Bancario</description>
+    <description>Modulo de Dominio do Core Bancario</description>
 
     <dependencies>
-        <!-- Dominio Puro: sem dependencias de Spring, JPA ou bibliotecas externas -->
     </dependencies>
 </project>

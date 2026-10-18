@@ -18,20 +18,17 @@
     <description>Modulo de Apresentacao RESTful e Ponto de Entrada da Aplicacao</description>
 
     <dependencies>
-        <!-- Camada Application (acesso aos DTOs e Services) -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>application</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

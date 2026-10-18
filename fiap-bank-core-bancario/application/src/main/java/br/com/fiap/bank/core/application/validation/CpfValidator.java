@@ -12,7 +12,7 @@ public class CpfValidator implements ConstraintValidator<Cpf, String> {
     @Override
     public boolean isValid(String valor, ConstraintValidatorContext context) {
         if (valor == null || valor.isBlank()) {
-            return true; // Delega validação de ausência para @NotBlank
+            return true;
         }
         return CPF_PATTERN.matcher(valor.trim()).matches();
     }

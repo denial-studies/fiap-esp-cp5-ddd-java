@@ -18,27 +18,23 @@
     <description>Modulo de Aplicacao (Casos de Uso, Services e DTOs com Validacao)</description>
 
     <dependencies>
-        <!-- Camada de Dominio -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>domain</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Camada de Infraestrutura -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>infrastructure</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Spring Boot Starter Validation (Jakarta Bean Validation) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
