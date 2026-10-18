@@ -23,6 +23,7 @@
         <module>domain</module>
         <module>infrastructure</module>
         <module>application</module>
+        <module>presentation</module>
     </modules>
 
     <properties>

@@ -32,6 +32,10 @@ public class ContaBancariaService {
     }
 
     public ContaBancariaResponse abrirConta(CriarContaRequest request) {
+        return abrirConta(request, gerarNumeroContaUnico());
+    }
+
+    public ContaBancariaResponse abrirConta(CriarContaRequest request, String numeroContaDesejado) {
         String cpfLimpo = sanitizarCpf(request.cpfCliente());
 
         Cliente cliente = clienteRepository.buscarPorCpf(new Cpf(cpfLimpo))
@@ -41,7 +45,9 @@ public class ContaBancariaService {
             throw new RegraNegocioException("O cliente já possui uma conta bancária vinculada.");
         }
 
-        String numeroConta = gerarNumeroContaUnico();
+        String numeroConta = (numeroContaDesejado != null && !numeroContaDesejado.isBlank())
+                ? numeroContaDesejado
+                : gerarNumeroContaUnico();
         String agencia = request.obterAgenciaPadrao();
 
         ContaBancaria conta = new ContaBancaria(

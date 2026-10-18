@@ -1,5 +1,6 @@
 package br.com.fiap.bank.core.application.dto;
 
+import br.com.fiap.bank.core.application.validation.Cpf;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -7,7 +8,7 @@ import java.time.LocalDate;
 
 public record CriarClienteRequest(
         @NotBlank(message = "O CPF é obrigatório.")
-        @Pattern(regexp = "(^\\d{11}$)|(^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$)", message = "O CPF deve conter exatamente 11 dígitos numéricos ou o formato canônico XXX.XXX.XXX-XX.")
+        @Cpf
         String cpf,
 
         @NotBlank(message = "O nome é obrigatório.")
