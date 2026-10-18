@@ -25,7 +25,7 @@ public record SolicitacaoCreditoResponseDTO(
     public static SolicitacaoCreditoResponseDTO fromEntity(SolicitacaoCredito entity) {
         return new SolicitacaoCreditoResponseDTO(
             entity.getId(),
-            entity.getCpfCliente(),
+            entity.getCpfCliente() != null ? entity.getCpfCliente().getValor() : null,
             entity.getNomeCliente(),
             entity.getTipoCredito(),
             entity.getValorSolicitado(),

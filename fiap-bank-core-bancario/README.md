@@ -28,30 +28,21 @@ Microsserviço de **Core Bancário** responsável pela gestão central de client
 Na raiz do diretório `fiap-bank-core-bancario`:
 
 ```bash
-mvn clean install
+mvn clean install -DskipTests
 ```
 
 ### 2. Iniciar a aplicação
 
-Você pode iniciar o serviço diretamente da raiz do módulo:
+Você pode iniciar o serviço diretamente da raiz do projeto:
 
 ```bash
-mvn -pl fiap-bank-core-bancario-presentation spring-boot:run
+mvn spring-boot:run -pl presentation
 ```
 
-Ou navegando até o módulo de apresentação:
+Ou executando o JAR empacotado:
 
 ```bash
-cd fiap-bank-core-bancario-presentation
-mvn spring-boot:run
-```
-
-### 3. Executar via arquivo JAR
-
-Após o empacotamento com `mvn clean package`:
-
-```bash
-java -jar fiap-bank-core-bancario-presentation/target/fiap-bank-core-bancario-presentation-1.0.0-SNAPSHOT.jar
+java -jar presentation/target/presentation-1.0.0-SNAPSHOT.jar
 ```
 
 A aplicação estará acessível em: **`http://localhost:8080`**

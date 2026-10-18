@@ -1,9 +1,11 @@
 package br.com.fiap.bank.plataforma.application.service;
 
 import br.com.fiap.bank.plataforma.application.dto.*;
+import br.com.fiap.bank.plataforma.application.exception.RecursoNaoEncontradoException;
 import br.com.fiap.bank.plataforma.domain.model.SolicitacaoCredito;
 import br.com.fiap.bank.plataforma.domain.model.StatusSolicitacao;
 import br.com.fiap.bank.plataforma.domain.repository.SolicitacaoCreditoRepository;
+import br.com.fiap.bank.plataforma.domain.valueobject.Cpf;
 import br.com.fiap.bank.plataforma.infrastructure.client.BureauCreditoService;
 import br.com.fiap.bank.plataforma.infrastructure.client.CoreBancarioClientService;
 import br.com.fiap.bank.plataforma.infrastructure.client.NotificacaoService;
@@ -41,7 +43,8 @@ public class PlataformaCreditoService {
 
     @Transactional
     public SolicitacaoCreditoResponseDTO solicitarCredito(SolicitarCreditoRequest request) {
-        String cpfLimpo = request.cpfCliente().replaceAll("\\D", "");
+        Cpf cpf = new Cpf(request.cpfCliente());
+        String cpfLimpo = cpf.getValor();
 
         // 1. Consulta SCR
         boolean temRestricaoScr = scrService.consultarRestricoesScr(cpfLimpo);
@@ -57,6 +60,11 @@ public class PlataformaCreditoService {
         String parecer;
         int scoreFinal = scoreBureau;
 
+        BigDecimal rendaMensal = (request.rendaMensal() != null) ? request.rendaMensal() : BigDecimal.ZERO;
+        String nomeCliente = (request.nomeCliente() != null && !request.nomeCliente().isBlank())
+                ? request.nomeCliente()
+                : (contaCore != null && contaCore.get("titular") != null ? contaCore.get("titular").toString() : "Cliente FIAP");
+
         if (temRestricaoScr) {
             status = StatusSolicitacao.REPROVADO;
             parecer = "Solicitacao reprovada automaticamente devido a restricoes ativas no SCR (Banco Central).";
@@ -64,8 +72,10 @@ public class PlataformaCreditoService {
             status = StatusSolicitacao.REPROVADO;
             parecer = "Solicitacao reprovada automaticamente. Score no Bureau de Credito insuficiente (" + scoreBureau + ").";
         } else {
-            BigDecimal parcelaEstimada = request.valorSolicitado().divide(BigDecimal.valueOf(request.quantidadeParcelas()), 2, RoundingMode.HALF_UP);
-            BigDecimal trintaPercentoRenda = request.rendaMensal().multiply(new BigDecimal("0.30"));
+            BigDecimal valor = (request.valorSolicitado() != null) ? request.valorSolicitado() : BigDecimal.ZERO;
+            int parcelas = (request.quantidadeParcelas() != null && request.quantidadeParcelas() > 0) ? request.quantidadeParcelas() : 1;
+            BigDecimal parcelaEstimada = valor.divide(BigDecimal.valueOf(parcelas), 2, RoundingMode.HALF_UP);
+            BigDecimal trintaPercentoRenda = rendaMensal.multiply(new BigDecimal("0.30"));
 
             if (parcelaEstimada.compareTo(trintaPercentoRenda) > 0) {
                 status = StatusSolicitacao.EM_ANALISE;
@@ -78,12 +88,12 @@ public class PlataformaCreditoService {
 
         SolicitacaoCredito solicitacao = new SolicitacaoCredito(
                 null,
-                cpfLimpo,
-                request.nomeCliente(),
+                cpf,
+                nomeCliente,
                 request.tipoCredito(),
                 request.valorSolicitado(),
                 request.quantidadeParcelas(),
-                request.rendaMensal(),
+                rendaMensal,
                 scoreFinal,
                 status,
                 parecer,
@@ -102,18 +112,28 @@ public class PlataformaCreditoService {
     }
 
     @Transactional(readOnly = true)
-    public List<SolicitacaoCreditoResponseDTO> consultarStatusPorCpf(ConsultarStatusRequest request) {
-        String cpfLimpo = request.cpfCliente().replaceAll("\\D", "");
+    public List<SolicitacaoCreditoResponseDTO> consultarStatusPorCpf(String cpf) {
+        String cpfLimpo = (cpf != null) ? new Cpf(cpf).getValor() : "";
         return repository.findByCpfClienteOrderByDataSolicitacaoDesc(cpfLimpo).stream()
                 .map(SolicitacaoCreditoResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public SolicitacaoCreditoResponseDTO buscarPorId(BuscarSolicitacaoRequest request) {
-        SolicitacaoCredito solicitacao = repository.findById(request.solicitacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Solicitacao nao encontrada com ID: " + request.solicitacaoId()));
+    public List<SolicitacaoCreditoResponseDTO> consultarStatusPorCpf(ConsultarStatusRequest request) {
+        return consultarStatusPorCpf(request.cpfCliente());
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitacaoCreditoResponseDTO buscarPorId(Long id) {
+        SolicitacaoCredito solicitacao = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Solicitacao nao encontrada com ID: " + id));
         return SolicitacaoCreditoResponseDTO.fromEntity(solicitacao);
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitacaoCreditoResponseDTO buscarPorId(BuscarSolicitacaoRequest request) {
+        return buscarPorId(request.solicitacaoId());
     }
 
     @Transactional(readOnly = true)
@@ -124,30 +144,44 @@ public class PlataformaCreditoService {
     }
 
     @Transactional
-    public SolicitacaoCreditoResponseDTO aprovarSolicitacao(AprovarSolicitacaoRequest request) {
-        SolicitacaoCredito solicitacao = repository.findById(request.solicitacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Solicitacao de credito nao encontrada com ID: " + request.solicitacaoId()));
+    public SolicitacaoCreditoResponseDTO aprovarSolicitacao(Long id, String parecerOperador) {
+        SolicitacaoCredito solicitacao = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Solicitacao de credito nao encontrada com ID: " + id));
 
         solicitacao.setStatus(StatusSolicitacao.APROVADO);
-        solicitacao.setParecerOperador("Aprovado pela Mesa de Operacoes: " + (request.parecerOperador() != null ? request.parecerOperador() : "OK"));
+        solicitacao.setParecerOperador("Aprovado pela Mesa de Operacoes: " + (parecerOperador != null ? parecerOperador : "OK"));
         solicitacao.setDataAtualizacao(LocalDateTime.now());
 
         SolicitacaoCredito salva = repository.save(solicitacao);
-        notificacaoService.enviarNotificacao(salva.getCpfCliente(), "PARABENS! Sua solicitacao de credito #" + salva.getId() + " foi APROVADA pela Mesa de Operacoes.");
+        notificacaoService.enviarNotificacao(salva.getCpfCliente().getValor(), "PARABENS! Sua solicitacao de credito #" + salva.getId() + " foi APROVADA pela Mesa de Operacoes.");
+        return SolicitacaoCreditoResponseDTO.fromEntity(salva);
+    }
+
+    @Transactional
+    public SolicitacaoCreditoResponseDTO aprovarSolicitacao(AprovarSolicitacaoRequest request) {
+        return aprovarSolicitacao(request.solicitacaoId(), request.parecerOperador());
+    }
+
+    @Transactional
+    public SolicitacaoCreditoResponseDTO reprovarSolicitacao(Long id, String motivoReprovacao) {
+        SolicitacaoCredito solicitacao = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Solicitacao de credito nao encontrada com ID: " + id));
+
+        solicitacao.setStatus(StatusSolicitacao.REPROVADO);
+        solicitacao.setParecerOperador("Reprovado pela Mesa de Operacoes. Motivo: " + (motivoReprovacao != null ? motivoReprovacao : "Inconformidade nos criterios de risco"));
+        solicitacao.setDataAtualizacao(LocalDateTime.now());
+
+        SolicitacaoCredito salva = repository.save(solicitacao);
+        notificacaoService.enviarNotificacao(salva.getCpfCliente().getValor(), "Sua solicitacao de credito #" + salva.getId() + " foi REPROVADA pela Mesa de Operacoes.");
         return SolicitacaoCreditoResponseDTO.fromEntity(salva);
     }
 
     @Transactional
     public SolicitacaoCreditoResponseDTO reprovarSolicitacao(ReprovarSolicitacaoRequest request) {
-        SolicitacaoCredito solicitacao = repository.findById(request.solicitacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Solicitacao de credito nao encontrada com ID: " + request.solicitacaoId()));
+        return reprovarSolicitacao(request.solicitacaoId(), request.motivoReprovacao());
+    }
 
-        solicitacao.setStatus(StatusSolicitacao.REPROVADO);
-        solicitacao.setParecerOperador("Reprovado pela Mesa de Operacoes. Motivo: " + (request.motivoReprovacao() != null ? request.motivoReprovacao() : "Inconformidade nos criterios de risco"));
-        solicitacao.setDataAtualizacao(LocalDateTime.now());
-
-        SolicitacaoCredito salva = repository.save(solicitacao);
-        notificacaoService.enviarNotificacao(salva.getCpfCliente(), "Sua solicitacao de credito #" + salva.getId() + " foi REPROVADA pela Mesa de Operacoes.");
-        return SolicitacaoCreditoResponseDTO.fromEntity(salva);
+    public Map<String, Object> consultarContaCliente(String cpfCliente) {
+        return coreBancarioClientService.consultarContaCliente(cpfCliente);
     }
 }

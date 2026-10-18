@@ -2,7 +2,6 @@ package br.com.fiap.bank.plataforma.presentation.controller;
 
 import br.com.fiap.bank.plataforma.application.dto.*;
 import br.com.fiap.bank.plataforma.application.service.PlataformaCreditoService;
-import br.com.fiap.bank.plataforma.infrastructure.client.CoreBancarioClientService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,12 +14,9 @@ import java.util.Map;
 public class CreditoOperacoesNonRestfulController {
 
     private final PlataformaCreditoService plataformaService;
-    private final CoreBancarioClientService coreBancarioClientService;
 
-    public CreditoOperacoesNonRestfulController(PlataformaCreditoService plataformaService,
-                                                 CoreBancarioClientService coreBancarioClientService) {
+    public CreditoOperacoesNonRestfulController(PlataformaCreditoService plataformaService) {
         this.plataformaService = plataformaService;
-        this.coreBancarioClientService = coreBancarioClientService;
     }
 
     /**
@@ -76,6 +72,6 @@ public class CreditoOperacoesNonRestfulController {
      */
     @PostMapping("/consultarClienteCore")
     public ResponseEntity<Map<String, Object>> consultarClienteCore(@RequestBody ConsultarStatusRequest request) {
-        return ResponseEntity.ok(coreBancarioClientService.consultarContaCliente(request.cpfCliente()));
+        return ResponseEntity.ok(plataformaService.consultarContaCliente(request.cpfCliente()));
     }
 }

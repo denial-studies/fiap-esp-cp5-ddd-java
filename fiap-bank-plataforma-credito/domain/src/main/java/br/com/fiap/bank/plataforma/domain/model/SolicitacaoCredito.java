@@ -1,12 +1,14 @@
 package br.com.fiap.bank.plataforma.domain.model;
 
+import br.com.fiap.bank.plataforma.domain.valueobject.Cpf;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class SolicitacaoCredito {
 
     private Long id;
-    private String cpfCliente;
+    private Cpf cpfCliente;
     private String nomeCliente;
     private String tipoCredito;
     private BigDecimal valorSolicitado;
@@ -23,7 +25,7 @@ public class SolicitacaoCredito {
     public SolicitacaoCredito() {
     }
 
-    public SolicitacaoCredito(Long id, String cpfCliente, String nomeCliente, String tipoCredito,
+    public SolicitacaoCredito(Long id, Cpf cpfCliente, String nomeCliente, String tipoCredito,
                               BigDecimal valorSolicitado, Integer quantidadeParcelas, BigDecimal rendaMensal,
                               Integer scoreCredito, StatusSolicitacao status, String parecerOperador,
                               Boolean scrRestricoes, Integer scoreBureau, LocalDateTime dataSolicitacao,
@@ -44,6 +46,16 @@ public class SolicitacaoCredito {
         this.dataAtualizacao = dataAtualizacao;
     }
 
+    public SolicitacaoCredito(Long id, String cpfCliente, String nomeCliente, String tipoCredito,
+                              BigDecimal valorSolicitado, Integer quantidadeParcelas, BigDecimal rendaMensal,
+                              Integer scoreCredito, StatusSolicitacao status, String parecerOperador,
+                              Boolean scrRestricoes, Integer scoreBureau, LocalDateTime dataSolicitacao,
+                              LocalDateTime dataAtualizacao) {
+        this(id, cpfCliente != null ? new Cpf(cpfCliente) : null, nomeCliente, tipoCredito,
+                valorSolicitado, quantidadeParcelas, rendaMensal, scoreCredito, status,
+                parecerOperador, scrRestricoes, scoreBureau, dataSolicitacao, dataAtualizacao);
+    }
+
     public Long getId() {
         return id;
     }
@@ -52,12 +64,20 @@ public class SolicitacaoCredito {
         this.id = id;
     }
 
-    public String getCpfCliente() {
+    public Cpf getCpfCliente() {
         return cpfCliente;
     }
 
-    public void setCpfCliente(String cpfCliente) {
+    public String getCpfClienteValor() {
+        return cpfCliente != null ? cpfCliente.getValor() : null;
+    }
+
+    public void setCpfCliente(Cpf cpfCliente) {
         this.cpfCliente = cpfCliente;
+    }
+
+    public void setCpfCliente(String cpfCliente) {
+        this.cpfCliente = cpfCliente != null ? new Cpf(cpfCliente) : null;
     }
 
     public String getNomeCliente() {
